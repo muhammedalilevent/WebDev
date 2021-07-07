@@ -1,0 +1,14 @@
+<div class="inputs">
+  <form [formGroup]="inputForm" (ngSubmit)="onSubmit()" >
+  <label>X Coordinate
+    <input type="text" id="point1" formControlName="x" >
+  </label>
+
+<label>Y Coordinate</label>
+<input type="text" id="point2" formControlName="y" >
+<button type="submit" [disabled]="!inputForm.valid" >Submit</button>
+</form>
+
+
+<!-- <p>{{value1.value}}</p> -->
+<br>
