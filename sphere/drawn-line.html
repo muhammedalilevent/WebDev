@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+    <style>
+        body {
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <script type="module">
+        import * as THREE from '../build/three.module.js';
+        import Stats from '../build/stats.module.js';
+
+        let camera, scene, renderer;
+
+        //Kamera Kontrolü İçin Değişken Atamaları
+        let isUserInteracting = false,
+            onPointerDownMouseX = 0, onPointerDownMouseY = 0,
+            lon = 0, onPointerDownLon = 0,
+            lat = 0, onPointerDownLat = 0,
+            phi = 0, theta = 0;
+
+        let raycaster, arrow;
+        let mouse = new THREE.Vector2();
+
+        let plane;
+
+        init();
+        animate();
+
+        function init() {
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 500);
+            camera.position.set(0, 0, 100);
+            camera.lookAt(0, 0, 0);
+
+            const scene = new THREE.Scene();
+
+            const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+
+            const points = [];
+            points.push(new THREE.Vector3(- 10, 0, 0));
+            //points.push(new THREE.Vector3(0, 10, 0));
+            points.push(new THREE.Vector3(10, 0, 0));
+
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+            const line = new THREE.Line(geometry, material);
+
+            scene.add(line);
+
+            renderer.render(scene, camera);
+
+
+        }
+
+
+
+
+        function animate() {
+
+            requestAnimationFrame(animate);
+            update();
+
+        }
+
+        function update() {
+
+
+
+
+        }
+
+
+
+    </script>
+
+
+</body>
+
+</html>

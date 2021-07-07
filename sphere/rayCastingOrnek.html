@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>three.js webgl - interactive - voxel painter</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #444;
+        }
+
+        a {
+            color: #08f;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="container"></div>
+
+    <script type="module">
+
+        import * as THREE from '../build/three.module.js';
+
+        let camera, scene, renderer;
+        let plane;
+        let mouse, raycaster, isShiftDown = false;
+
+        let rollOverMesh, rollOverMaterial;
+        let cubeGeo, cubeMaterial;
+
+        //Kamera Kontrolü İçin Değişken Atamaları
+        let isUserInteracting = false,
+            onPointerDownMouseX = 0, onPointerDownMouseY = 0,
+            lon = 0, onPointerDownLon = 0,
+            lat = 0, onPointerDownLat = 0,
+            phi = 0, theta = 0;
+
+        const objects = [];
+
+        init();
+        render();
+
+        function init() {
+
+            const container = document.getElementById('container');
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.set(50, 80, 130);
+            camera.lookAt(0, 0, 0);
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+
+            // roll-over helpers
+            const rollOverGeo = new THREE.BoxGeometry(50, 50, 50);
+            rollOverMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
+            rollOverMesh = new THREE.Mesh(rollOverGeo, rollOverMaterial);
+            scene.add(rollOverMesh);
+
+            // cubes
+
+            cubeGeo = new THREE.BoxGeometry(50, 50, 50);
+            cubeMaterial = new THREE.MeshLambertMaterial({ color: 0xfeb74c });
+
+            // grid
+
+            const gridHelper = new THREE.GridHelper(10000, 200);
+            scene.add(gridHelper);
+
+            //
+            const planeGeometry = new THREE.PlaneGeometry(1000, 1000);
+            planeGeometry.rotateX(- Math.PI / 2);
+            plane = new THREE.Mesh(planeGeometry, new THREE.MeshBasicMaterial({ visible: true }));
+            const color5 = new THREE.Color('red');
+            plane.color = color5
+            plane.name = "PlaneMesh";
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            const geometry = new THREE.PlaneGeometry(10000, 10000);
+            geometry.rotateX(- Math.PI / 2);
+
+            plane = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: false }));
+            scene.add(plane);
+
+            console.log(scene);
+            // objects.push(plane);
+
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // document.body.appendChild(renderer.domElement);
+            container.appendChild(renderer.domElement);
+
+            document.addEventListener('mousemove', onDocumentMouseMove);
+            document.addEventListener('mousedown', onDocumentMouseDown);
+            document.addEventListener('keydown', onDocumentKeyDown);
+            document.addEventListener('keyup', onDocumentKeyUp);
+
+            //Kamera Kontrolü İçin Event Atamaları
+            container.addEventListener('pointerdown', onPointerDown);
+            document.addEventListener('wheel', onDocumentMouseWheel);
+            document.addEventListener('dragover', function (event) {
+
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'copy';
+                console.log('DragOver');
+
+            });
+
+            document.addEventListener('dragenter', function () {
+
+                document.body.style.opacity = 0.5;
+                console.log('DragEnter');
+            });
+
+            document.addEventListener('dragleave', function () {
+
+                document.body.style.opacity = 1;
+                console.log('DragLeave');
+
+            });
+
+            //
+
+            window.addEventListener('resize', onWindowResize);
+
+        }
+
+        function onPointerDown(event) {
+            console.log('geldin mi');
+            if (event.isPrimary === false) return;
+
+            isUserInteracting = true;
+
+            console.log('Sol Kliğe Basıldı');
+            console.log(raycaster.ray);
+            onPointerDownMouseX = event.clientX;
+            onPointerDownMouseY = event.clientY;
+
+            onPointerDownLon = lon;
+            onPointerDownLat = lat;
+
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+
+        }
+
+        function onPointerMove(event) {
+            //SOL CLICK BASILI TUTULUP HAREKET EDİLDİĞİNDE BU BLOĞA GİRER
+            if (event.isPrimary === false) return;
+
+            lon = (onPointerDownMouseX - event.clientX) * 0.1 + onPointerDownLon;
+            lat = (event.clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            console.log('Sol Click Basılı Tutulup Hareket Edildi');
+
+        }
+
+        function onPointerUp() {
+            //SOL CLICKTEN KALDIRILDIĞINDA BU BLOĞA GİRER
+            if (event.isPrimary === false) return;
+
+            isUserInteracting = false;
+            console.log('Sol Clickten Kaldırıldı');
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
+
+        }
+
+        function onDocumentMouseWheel(event) {
+            //MOUSE TEKERİ DÖNDÜĞÜNDE BU BLOĞA GİRİYOR
+            const fov = camera.fov + event.deltaY * 0.05;
+
+            camera.fov = THREE.MathUtils.clamp(fov, 10, 75);
+
+            camera.updateProjectionMatrix();
+            console.log('Mouse Tekeri Etkileşimi');
+
+        }
+
+        function onWindowResize() {
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+        }
+
+        function onDocumentMouseMove(event) {
+
+            event.preventDefault();
+
+            mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+
+            raycaster.setFromCamera(mouse, camera);
+
+
+            const intersects = raycaster.intersectObjects(objects);
+
+            if (intersects.length > 0) {
+
+                const intersect = intersects[0];
+
+                rollOverMesh.position.copy(intersect.point).add(intersect.face.normal);
+                rollOverMesh.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+
+            }
+
+            render();
+
+        }
+
+        function onDocumentMouseDown(event) {
+
+            event.preventDefault();
+
+            mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(objects);
+            //console.log(raycaster.ray);
+            if (intersects.length > 0) {
+
+                const intersect = intersects[0];
+
+                // delete cube
+
+                if (isShiftDown) {
+
+                    if (intersect.object !== plane) {
+
+                        scene.remove(intersect.object);
+
+                        objects.splice(objects.indexOf(intersect.object), 1);
+
+                    }
+
+                    // create cube
+
+                } else {
+
+                    const voxel = new THREE.Mesh(cubeGeo, cubeMaterial);
+                    voxel.position.copy(intersect.point).add(intersect.face.normal);
+                    voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+                    scene.add(voxel);
+                    console.log(raycaster.ray);
+                    objects.push(voxel);
+
+                }
+
+                render();
+
+            }
+
+        }
+
+        function onDocumentKeyDown(event) {
+
+            switch (event.keyCode) {
+
+                case 16: isShiftDown = true; break;
+
+            }
+
+        }
+
+        function onDocumentKeyUp(event) {
+
+            switch (event.keyCode) {
+
+                case 16: isShiftDown = false; break;
+
+            }
+        }
+
+        function render() {
+
+            renderer.render(scene, camera);
+            update();
+
+        }
+
+        function update() {
+
+
+            lat = Math.max(- 85, Math.min(85, lat));
+            phi = THREE.MathUtils.degToRad(90 - lat);
+            theta = THREE.MathUtils.degToRad(lon);
+
+            const x = 500 * Math.sin(phi) * Math.cos(theta);
+            const y = 500 * Math.cos(phi);
+            const z = 500 * Math.sin(phi) * Math.sin(theta);
+
+            camera.lookAt(x, y, z);
+
+            renderer.render(scene, camera);
+
+        }
+
+    </script>
+
+</body>
+
+</html>

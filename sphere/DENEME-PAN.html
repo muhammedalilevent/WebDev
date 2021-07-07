@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+    <style>
+        body {
+            touch-action: none;
+        }
+
+        button {
+            z-index: 1;
+            position: absolute;
+            top: 10px;
+            left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <button id="btn1" type="button" onclick="drawMode()">Draw Mode</button>
+
+    <script type="module">
+        import * as THREE from '../build/three.module.js';
+        import Stats from '../build/stats.module.js';
+
+        //Three JS Main
+        let camera, scene, renderer;
+        //Kamera Kontrolü İçin Değişken Atamaları
+        let isUserInteracting = false,
+            onPointerDownMouseX = 0, onPointerDownMouseY = 0,
+            lon = 0, onPointerDownLon = 0,
+            lat = 0, onPointerDownLat = 0,
+            phi = 0, theta = 0;
+
+        //Line Çizimi İçin Point Atamaları
+        let point1 = new THREE.Vector3();
+        let point2 = new THREE.Vector3();
+        let points = [];
+
+        //raycaster ve mouse ataması
+        let raycaster;
+        let mouse = new THREE.Vector2();
+
+        //Text Çizimi İçin gerekli Parametreler
+
+
+
+
+        //düzlem
+        let plane;
+
+        let isDrawModeOn = false;
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('container');
+
+            //Kamera Ayarlaması
+            //Selim Abinin Değerleri
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 90000);
+            //Benim Değerlerim
+            //camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2500);
+
+            //Sahne Oluşturuldu
+            scene = new THREE.Scene();
+
+            //Sphere Yapısı Oluşturuldu
+            const geometry = new THREE.SphereGeometry(2000, 1000, 1000);
+            geometry.scale(-1, 1, 1);
+            //Sphere texture'u ayarlaması
+            const texture = new THREE.TextureLoader().load('11428.jpeg');
+            //Sphere Material Ayarlandı
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+
+            //RayCaster Oluşturuldu
+            raycaster = new THREE.Raycaster();
+
+            //Mesh Oluşturuldu
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.name = "SphereMesh"
+            console.log(geometry);
+
+            //Düzlemi temsil etmesi için bir Plane Oluşturuldu
+            const planeGeometry = new THREE.PlaneGeometry(3100, 3000, 100, 100);
+            //const planeGeometry = new THREE.PlaneGeometry(2000, 2000, 100, 100);
+            planeGeometry.scale(-1, 1, 1)
+
+            //Düzlem Yatay Hale Getirildi
+            planeGeometry.rotateX(Math.PI / 2);
+            plane = new THREE.Mesh(planeGeometry, new THREE.MeshBasicMaterial({ visible: true, color: 0xffffff, wireframe: true }));
+            plane.name = "PlaneMesh";
+            console.log(plane);
+            //Yükseklik -100 ayarlandı
+            plane.position.y = -266
+
+            // girilecek pitch değeri  2.961482
+
+            let roll = THREE.MathUtils.degToRad(+0.16);
+            //let pitch = THREE.MathUtils.degToRad(-0.21);
+            let picStabilizer = 0.1;
+            let pitch = THREE.MathUtils.degToRad(-2.751482) * picStabilizer;
+            let heading = THREE.MathUtils.degToRad(1.05);
+
+
+
+            // let roll = THREE.MathUtils.degToRad(-0.16);
+            // let pitch = THREE.MathUtils.degToRad(+0.21);
+            // let heading = THREE.MathUtils.degToRad(+1.05);
+            planeGeometry.rotateX(roll);
+            planeGeometry.rotateY(heading);
+            planeGeometry.rotateZ(pitch);
+
+
+            camera.lookAt(-20, 0, 0)
+            //ROTATE Z PITCH AYARLAMA PLANE İÇİN
+            //ROTATE Y YAM AYARLAMA PLANE İÇİN HEADING
+            //ROTATE X ROLL AYARLAMA PLANE İÇİN
+            // let roll = THREE.MathUtils.degToRad(0.16);
+            // let pitch = THREE.MathUtils.degToRad(-0.21 + 0.494239);
+            // //let heading = THREE.MathUtils.degToRad(1.05); Gerçek Veriler
+            //let heading = THREE.MathUtils.degToRad(-1.05);
+
+            //  TOPLANMIŞ HALİ
+            // let roll = THREE.MathUtils.degToRad(-1.679914);
+            // let pitch = THREE.MathUtils.degToRad(0.704293);
+            // let heading = THREE.MathUtils.degToRad(-40.3786);
+
+            // // Anlık Değer -Araç Değeri
+            // let roll = THREE.MathUtils.degToRad(1.359914);
+            // let pitch = THREE.MathUtils.degToRad(-0.284293);
+            // let heading = THREE.MathUtils.degToRad(38.27386);
+
+
+            // planeGeometry.rotateX(roll);
+            // planeGeometry.rotateY(heading);
+            // planeGeometry.rotateZ(pitch);
+
+            scene.add(plane);
+
+            //Sahneye Eklendi
+            //MESH BİR ÇOK TRIANGLE'IN BİR ARAYA GELMESİ İLE OLUŞUR
+            scene.add(mesh);
+
+
+            renderer = new THREE.WebGLRenderer({ alpha: true });
+            //RENDERER'I CİHAZIN PİXEL ORANINA GÖRE AYARLIYOR
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setClearColor(0x000000, 0); // the default
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            //Responsive Olması İçin Event Ataması
+            window.addEventListener('resize', onWindowResize);
+
+            container.addEventListener('pointerdown', onPointerDown)
+            document.addEventListener('wheel', onDocumentMouseWheel);
+            document.getElementById("btn1").onclick = drawMode;
+            container.addEventListener('click', takeCoord)
+            container.addEventListener('contextmenu', takeCoord2)
+        }
+
+        function takeCoord() {
+            let intersects = raycaster.intersectObjects(scene.children);
+            if (intersects.length > 0) {
+                console.log(intersects);
+                let planeMesh = intersects.filter(index => index.object.name == "PlaneMesh");
+                lineDrawStart(planeMesh[0].point)
+
+            }
+        }
+
+        function takeCoord2() {
+            let intersects = raycaster.intersectObjects(scene.children);
+            if (intersects.length > 0) {
+                console.log(intersects);
+                let planeMesh = intersects.filter(index => index.object.name == "PlaneMesh");
+                lineDrawEnd(planeMesh[0].point)
+
+
+            }
+        }
+
+        function lineDrawStart(point) {
+
+            point1 = point;
+            let intersects = raycaster.intersectObjects(scene.children);
+
+
+
+
+        }
+        function lineDrawEnd(point) {
+            point2 = point;
+
+
+            //console.log(point1, point2);
+            let parca1 = Math.pow(point2.x - point1.x, 2)
+            let parca2 = Math.pow(point2.y - point1.y, 2)
+            let parca3 = Math.pow(point2.z - point1.z, 2)
+            const uzaklikBirim = 2.661 / 100;
+            // console.log(parca1, parca2, parca3);
+            //console.log("Uzaklık", Math.sqrt(parca1 + parca2 + parca3) * uzaklikBirim);
+            console.log("Uzaklık", Math.sqrt(parca1 + parca2 + parca3));
+
+
+
+            const intersects = raycaster.intersectObjects(scene.children);
+
+            points.push(point1);
+            points.push(point2);
+            console.log(raycaster);
+            console.log(raycaster.intersectObjects(scene.children));
+            console.log("1.nokta ", point1, "2.nokta ", point2);
+
+            let lineGeom = new THREE.BufferGeometry().setFromPoints(points);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+            let line = new THREE.Line(lineGeom, lineMaterial)
+            scene.add(line)
+        }
+
+
+
+
+
+        function onWindowResize() {
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+        }
+
+        function onPointerDown(event) {
+            if (event.isPrimary === false) return;
+
+            if (!isDrawModeOn) {
+                onPointerDownMouseX = event.clientX;
+                onPointerDownMouseY = event.clientY;
+
+
+                onPointerDownLon = lon;
+                onPointerDownLat = lat;
+
+                document.addEventListener('pointermove', onPointerMove);
+                document.addEventListener('pointerup', onPointerUp);
+                document.addEventListener('mousemove', onMouseMove, false);
+            }
+        }
+
+        function onPointerMove(event) {
+            //SOL CLICK BASILI TUTULUP HAREKET EDİLDİĞİNDE BU BLOĞA GİRER
+            if (event.isPrimary === false) return;
+
+            if (!isDrawModeOn) {
+                lon = (onPointerDownMouseX - event.clientX) * 0.1 + onPointerDownLon;
+                lat = (event.clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            }
+
+        }
+
+        function onMouseMove(event) {
+
+            // calculate mouse position in normalized device coordinates
+            // (-1 to +1) for both components
+            if (!isDrawModeOn) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            }
+
+        }
+
+        function drawMode() {
+            isDrawModeOn = !isDrawModeOn;
+        }
+
+
+        function onPointerUp(event) {
+            //SOL CLICKTEN KALDIRILDIĞINDA BU BLOĞA GİRER
+            if (event.isPrimary === false) return;
+
+            isUserInteracting = false;
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
+
+        }
+
+        function onDocumentMouseWheel(event) {
+            //MOUSE TEKERİ DÖNDÜĞÜNDE BU BLOĞA GİRİYOR
+            const fov = camera.fov + event.deltaY * 0.05;
+
+            camera.fov = THREE.MathUtils.clamp(fov, 10, 75);
+
+            camera.updateProjectionMatrix();
+
+        }
+
+        //Text Func
+
+
+
+
+
+
+        function animate() {
+
+            requestAnimationFrame(animate);
+            update();
+
+        }
+
+        function update() {
+
+
+
+            if (!isDrawModeOn) {
+
+                lat = Math.max(- 85, Math.min(85, lat));
+                phi = THREE.MathUtils.degToRad(90 - lat);
+                theta = THREE.MathUtils.degToRad(lon);
+
+                const x = 500 * Math.sin(phi) * Math.cos(theta);
+                const y = 500 * Math.cos(phi);
+                const z = 500 * Math.sin(phi) * Math.sin(theta);
+
+                camera.lookAt(x, y, z);
+            }
+
+
+
+
+            raycaster.setFromCamera(mouse, camera)
+            renderer.render(scene, camera);
+
+        }
+
+
+
+    </script>
+
+
+</body>
+
+</html>

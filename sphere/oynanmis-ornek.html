@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+    <style>
+        body {
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <script type="module">
+
+        import * as THREE from '../build/three.module.js';
+
+        let camera, scene, renderer;
+
+
+        let onPointerDownPointerX, onPointerDownPointerY, onPointerDownLon, onPointerDownLat;
+
+        let lon = 0, lat = 0;
+        let phi = 0, theta = 0;
+
+        const textureLoader = new THREE.TextureLoader();
+
+        textureLoader.load('exp1.jpg', function (texture) {
+
+            texture.encoding = THREE.GammaEncoding;
+            //TEXTURE'E  BİR NEVİ RENKLENDİRME AYARI ÇEKİYOR 
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            //TEXTURE'UN MAPPING MODE'UNU TANIMLAR DEFAULT'U  UVMAPPING'DIR
+            //NORMALDE SAHNE CUBE OLMASI GEREKİRKEN  BU MAPPİNG SAYESİNDE DÜZELİYOR
+
+            init(texture);
+            animate();
+
+        });
+
+        function init(texture) {
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            //WebGLRenderer bir JS API interaktif 2d ve 3d grafikler görüntülememizi sağlar
+            //antialias kenar yumuşatma
+
+
+            renderer.setPixelRatio(window.devicePixelRatio);
+            //Cihazın pixel Oranına Göre Pixel Oranı Ayarlar
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            renderer.outputEncoding = THREE.sRGBEncoding;
+
+
+            document.body.appendChild(renderer.domElement);
+
+            scene = new THREE.Scene();
+            scene.background = texture;
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+
+            // const geometry2 = new THREE.PlaneGeometry(555, 200, 320);
+            // const material2 = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
+            // const plane = new THREE.Mesh(geometry2, material2);
+            // scene.add(plane);
+
+            const geometry2 = new THREE.BufferGeometry();
+            // create a simple square shape. We duplicate the top left and bottom right
+            // vertices because each vertex needs to appear once per triangle.
+            const vertices = new Float32Array([
+                -1.0, -1.0, 1.0,
+                1.0, -1.0, 1.0,
+                1.0, 1.0, 1.0,
+
+                1.0, 1.0, 1.0,
+                -1.0, 1.0, 1.0,
+                -1.0, -1.0, 1.0
+            ]);
+
+            // itemSize = 3 because there are 3 values (components) per vertex
+            geometry2.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            const material2 = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const mesh2 = new THREE.Mesh(geometry2, material2);
+
+
+
+            document.addEventListener('pointerdown', onPointerDown);
+            document.addEventListener('wheel', onDocumentMouseWheel);
+
+            window.addEventListener('resize', onWindowResized);
+
+        }
+
+        function onWindowResized() {
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+        }
+
+        function onPointerDown(event) {
+
+            event.preventDefault();
+
+            onPointerDownPointerX = event.clientX;
+            onPointerDownPointerY = event.clientY;
+
+            onPointerDownLon = lon;
+            onPointerDownLat = lat;
+
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+
+        }
+
+        function onPointerMove(event) {
+
+            lon = (event.clientX - onPointerDownPointerX) * 0.1 + onPointerDownLon;
+            lat = (event.clientY - onPointerDownPointerY) * 0.1 + onPointerDownLat;
+
+        }
+
+        function onPointerUp() {
+
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
+
+        }
+
+        function onDocumentMouseWheel(event) {
+
+            const fov = camera.fov + event.deltaY * 0.05;
+
+            camera.fov = THREE.MathUtils.clamp(fov, 10, 75);
+
+            camera.updateProjectionMatrix();
+
+        }
+
+        function animate() {
+
+            requestAnimationFrame(animate);
+            render();
+
+        }
+
+        function render() {
+
+            const time = Date.now();
+
+            // lon += .15;
+
+            lat = Math.max(- 85, Math.min(85, lat));
+            phi = THREE.MathUtils.degToRad(90 - lat);
+            theta = THREE.MathUtils.degToRad(lon);
+
+
+
+            camera.position.x = 100 * Math.sin(phi) * Math.cos(theta);
+            camera.position.y = 100 * Math.cos(phi);
+            camera.position.z = 100 * Math.sin(phi) * Math.sin(theta);
+
+            camera.lookAt(scene.position);
+
+
+
+            renderer.render(scene, camera);
+            renderer.setClearColor(0x000000, 0); // the default
+
+        }
+
+    </script>
+
+</body>
+
+</html>

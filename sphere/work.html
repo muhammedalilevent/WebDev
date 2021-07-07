@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    body {
+        touch-action: none;
+
+    }
+
+    .container {
+        width: 100%;
+        height: 100%;
+    }
+</style>
+
+<body>
+    <div id="container"></div>
+
+</body>
+
+<script type="module">
+    import * as THREE from '../build/three.module.js';
+    import Stats from '../build/stats.module.js';
+
+    let camera, scene, renderer;
+
+
+
+    function init() {
+        const container = document.getElementById('container');
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+
+        scene = new THREE.Scene();
+
+        renderer = new THREE.WebGLRenderer({ alpha: true });
+
+        const geometry = new THREE.SphereGeometry(50, 1000, 1000);
+        // geometry.scale(-1, 1, 1);
+        const texture = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+        const mesh = new THREE.Mesh(geometry, texture)
+        //mesh.material.side = THREE.DoubleSide;
+
+
+        camera.position.y = 0;
+        camera.position.z = 100;
+        console.log(camera);
+
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+
+
+        scene.add(mesh)
+
+
+
+
+
+
+
+    }
+
+    function animate() {
+        //requestAnimationFrame(animate);
+        update();
+    }
+
+
+    function update() {
+
+
+        renderer.render(scene, camera)
+
+    }
+
+    init();
+    animate();
+
+
+
+
+
+
+
+</script>
+
+</html>

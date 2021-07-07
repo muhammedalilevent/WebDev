@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>three.js webgl - geometry - text</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+</head>
+
+<body>
+
+    <div id="info">
+
+
+
+    </div>
+
+    <script type="module">
+
+        import * as THREE from '../build/three.module.js';
+
+        import Stats from './jsm/libs/stats.module.js';
+
+
+        let container;
+        let camera, cameraTarget, scene, renderer, material;
+        let textGeo, materials, font, textMesh1;
+        let text = "three.js";
+
+
+
+
+        init();
+        animate();
+
+        
+        
+
+
+        function init() {
+
+            container = document.createElement('div');
+            document.body.appendChild(container);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1500);
+            camera.position.set(100, 100, 700);
+
+            //cameraTarget = new THREE.Vector3(0, 150, 0);
+
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+            //scene.fog = new THREE.Fog(0x000000, 250, 1400);
+            //camera.position.y = 100
+            //  camera.position.x = 100
+
+            material = new THREE.MeshPhongMaterial({ color: 0xffffff });
+
+
+
+
+            loadFont();
+
+
+        }
+
+
+
+        function loadFont() {
+
+            const loader = new THREE.FontLoader();
+            loader.load('fonts/helvetiker_regular.typeface.json', function (response) {
+
+                font = response;
+
+                createText();
+
+            });
+
+        }
+
+        function createText() {
+
+            textGeo = new THREE.TextGeometry(text, {
+                font: font,
+                size: 80,
+                height: 5,
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 10,
+                bevelSize: 8,
+                bevelOffset: 0,
+                bevelSegments: 5
+
+            });
+
+            textGeo.computeBoundingBox();
+
+
+
+            textMesh1 = new THREE.Mesh(textGeo, material);
+
+            scene.add(textMesh1)
+
+            console.log(scene);
+            setTimeout(() => {
+                scene.remove(textMesh1)
+                setTimeout(() => {
+                    scene.add(textMesh1)
+                    console.log(scene);
+
+                }, 1000);
+
+
+            }, 10000);
+
+        }
+
+
+        function animate() {
+
+            for (let index = 0; index < 10; index++) {
+                text = text + index
+
+            }
+
+            requestAnimationFrame(animate);
+
+            render();
+
+
+        }
+
+        function render() {
+
+
+
+            //camera.lookAt(cameraTarget);
+
+            renderer.render(scene, camera);
+
+        }
+
+    </script>
+
+</body>
+
+</html>

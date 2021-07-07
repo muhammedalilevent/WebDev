@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+    <style>
+        body {
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script type="module">
+        import * as THREE from '../build/three.module.js';
+
+        let camera, scene, renderer;
+
+        const textureLoader = new THREE.TextureLoader();
+
+        textureLoader.load('exp1.jpg', function (texture) {
+
+            texture.encoding = THREE.sRGBEncoding;
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+
+            init(texture);
+            animate();
+
+        });
+
+        function init(texture) {
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            document.body.appendChild(renderer.domElement);
+
+            scene = new THREE.Scene();
+            scene.background = texture;
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+
+
+            // document.addEventListener('pointerdown', onPointerDown);
+            // document.addEventListener('wheel', onDocumentMouseWheel);
+
+            // window.addEventListener('resize', onWindowResized);
+
+        }
+
+        function animate() {
+
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+
+        }
+
+    </script>
+
+</body>
+
+</html>
